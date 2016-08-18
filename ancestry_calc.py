@@ -15,6 +15,27 @@ import pylab
 import cPickle
 from os import path
 
+data_dir='/home/bvilhjal/Neanderthal/faststorage/data/bgs/per_chromosome/'
+
+def get_snp_list(plink_prefix):
+    from plinkio import plinkfile
+    
+    snps_filter = {}
+    for chrom_i in range(1,23):
+        genotype_file = '%s.chr%d.out.dosage.gz.qc2'%(plink_prefix,chrom_i)
+        #Parse plink file ...
+        plinkf = plinkfile.PlinkFile(genotype_file)
+        locus_list = plinkf.get_loci()
+        sids = []
+        for locus in locus_list:
+            sids.append(locus.name)
+        plinkf.close()
+        chrom_str = 'chr%d' % chrom_i
+
+        snps_filter[chrom_str] = sp.array(sids)
+    
+    return snps_filter
+
 
 def parse_pc_weights(pc_weights_file):
     """
@@ -411,17 +432,23 @@ def _test_prediction_(indiv_genot_file=None, indiv_imputed_genot_file = None):
     
     
     
-def _test_pca_projection_():
+def _test_pca_projection_(Kgenomes_gt_file=None, no_missing_plink_prefix=None, pc_weights_file=None):
     #Datasets: a) 1K genomes; b) iPSYCH dataset; c) PC weights.
     
-    #For each wave!
     #1. Figure out which SNPs to use
-    #   - Restrict iPSYCH SNPs to ones with no missing values.... or LD impute?
+    #   - Restrict iPSYCH SNPs to ones with no missing values.  (i.e. ~200000K SNPs)
     #   - Parse iPsych files into SNP filter dicts. 
-    #   - Determine a overlap of SNPs between datasets.
+    snps_filter = get_snp_list(no_missing_plink_prefix)
     
+    #   - Parse PC weights 
+    pc_weights_dict, pc_stats = parse_pc_weights(pc_weights_file)
+    
+    #   - Determine a overlap of SNPs between datasets.
     #2. Project 1K genome, determine EUR cluster.
+    kgt_pc_dict = calc_genot_pcs(Kgenomes_gt_file, pc_weights_dict, pc_stats, populations_to_use = ['EUR','AFR','EAS'], 
+                                snps_filter=snps_filter, verbose=True)
+    
     
     #3. For each indiv in iPSYCH, project onto PCs and determine ancestry, even estimate admixture proportions?
-    
+    pass
     
