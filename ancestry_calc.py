@@ -1,8 +1,7 @@
 """
 Predict individual ancestry in the data using the Chen et al., Bioinformatics 2013 method, together with 1K genomes data.
-"""
 
-"""
+
 core functions to calculate ancestry
 """
 import matplotlib
@@ -15,7 +14,6 @@ import h5py
 import pylab
 import cPickle
 from os import path
-
 
 
 def parse_pc_weights(pc_weights_file):
@@ -202,10 +200,10 @@ def calc_genot_pcs(genot_file, pc_weights_dict, pc_stats, populations_to_use = [
         chrom_str = 'chr%d' % chrom
 
         print 'Identifying overlap'
-        ok_snp_filter = sp.in1d(ok_sids, snps_filter[chrom_str])
+        ok_snp_filter = sp.in1d(ok_sids, snps_filter[chrom_str]) #Subsetting SNPs between PC weights file and SNP filter
         ok_chrom_sids = ok_sids.compress(ok_snp_filter, axis=0)
         sids = h5f[chrom_str]['variants']['ID'][...]
-        ok_snp_filter = sp.in1d(sids, ok_chrom_sids)
+        ok_snp_filter = sp.in1d(sids, ok_chrom_sids) #Subsetting SNPs between genotype file and previous subset.  
         #         assert sids[ok_snp_filter]==ok_sids, 'WTF?'
         sids = sids.compress(ok_snp_filter, axis=0)
 
@@ -295,7 +293,7 @@ def plot_pcs(plot_file, pcs, populations, indiv_pcs=None):
     :param pcs: principal components from the hapmap dataset
     :param genotype_pcs_dict: Dictionary with PCs of the individual (optional)
     """
-    log.info('Plotting PCs of Hapmap')
+    print 'Plotting PCs of Hapmap'
     # Plot them
     pylab.clf()
     unique_pops = sp.unique(populations)
@@ -305,7 +303,7 @@ def plot_pcs(plot_file, pcs, populations, indiv_pcs=None):
         print pop_pcs.shape
         pylab.plot(pop_pcs[:,0], pop_pcs[:,1], label=pop, ls='', marker='.', alpha=0.6)
 
-    log.info('Plotting genome on plot')
+    print 'Plotting genome on plot'
     # Project genome on to plot.
     if indiv_pcs is not None:
         pylab.plot(indiv_pcs[0], indiv_pcs[1], 'o', label='This is you')
@@ -360,34 +358,9 @@ def get_snps_filter(nt_map_file):
         snps_filter[chrom_str] = nt_map[chrom_str]['sids']
     return snps_filter
 
-def calc_admixture(pred_pcs, admix_decomp_mat):    
-    """
-    Get admixture decomp.  Predicted PCs correspond to the admix_decomp_mat.
-    """
-    log.info('Decomposing individual admixture')
-
-    v=sp.concatenate((pred_pcs,[1.0]))
-    admixture = sp.dot(v, admix_decomp_mat)
-    assert 0.99<sp.sum(admixture)<1.01, "Admixture doesn't sum to 1: "+str(admixture)
-    raw_admixture = sp.copy(admixture)
-    admixture[admixture<0]=0
-    admixture = admixture/sp.sum(admixture)
-    confidence_score = sp.sum((admixture-raw_admixture)**2)/len(admixture)
-    if confidence_score<0.001: 
-        confidence = 'Very good'
-    elif confidence_score<0.01:
-        confidence = 'Good'
-    elif confidence_score<0.1:
-        confidence = 'Mediocre'
-    elif confidence_score<1:
-        confidence = 'Poor'
-    else:
-        confidence='None'
-    return {'admixture':admixture, 'unadjusted_admixture':raw_admixture, 'confidence':confidence, 'confidence_score':confidence_score}
-
 
 #For debugging purposes
-def _test_admixture_(indiv_genot_file=None, indiv_imputed_genot_file = None):
+def _test_prediction_(indiv_genot_file=None, indiv_imputed_genot_file = None):
     if indiv_imputed_genot_file is not None:
         indiv_genot_file = '/faststorage/project/TheHonestGene/prediction_data/23andme-genomes_imputed/'+indiv_imputed_genot_file
     elif indiv_genot_file is not None:
@@ -420,13 +393,14 @@ def _test_admixture_(indiv_genot_file=None, indiv_imputed_genot_file = None):
 #     print 'Save projected PCs and admixture decomposition to file'
 #     save_pcs_admixture_info(pcs_dict['pcs'], pcs_dict['pop_dict'], ref_pcs_admix_file)
 
+
     print 'Loading pre-calculated projected PCs and admixture decomposition to file'
     pcs_dict = load_pcs_admixture_info(ref_pcs_admix_file)
     
 
     # Calculate admixture for an individual
     print 'Calculate admixture for an individual.'
-    ancestry_results =  ancestry_analysis(indiv_genot_file, pc_weights_hdf5_file, ref_pcs_admix_file, check_population='EUR',)
+    ancestry_results = ancestry_analysis(indiv_genot_file, pc_weights_hdf5_file, ref_pcs_admix_file, check_population='EUR',)
     print ancestry_results['admixture']
     
     
@@ -434,5 +408,20 @@ def _test_admixture_(indiv_genot_file=None, indiv_imputed_genot_file = None):
     print "Plot PC projection for the genotypes."
     plot_pcs(pcs_plot_file, pcs_dict['pcs'], pcs_dict['pop_dict']['populations'], indiv_pcs=ancestry_results['indiv_pcs'])
     
+    
+    
+    
+def _test_pca_projection_():
+    #Datasets: a) 1K genomes; b) iPSYCH dataset; c) PC weights.
+    
+    #For each wave!
+    #1. Figure out which SNPs to use
+    #   - Restrict iPSYCH SNPs to ones with no missing values.... or LD impute?
+    #   - Parse iPsych files into SNP filter dicts. 
+    #   - Determine a overlap of SNPs between datasets.
+    
+    #2. Project 1K genome, determine EUR cluster.
+    
+    #3. For each indiv in iPSYCH, project onto PCs and determine ancestry, even estimate admixture proportions?
     
     
