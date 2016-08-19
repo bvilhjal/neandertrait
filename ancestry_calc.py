@@ -325,7 +325,34 @@ def calc_genot_pcs(genot_file, pc_weights_dict, pc_stats, populations_to_use = [
 
 
 
+def save_pcs_info(pcs_dict, output_file): #    return {'pcs': pcs, 'num_snps_used': num_snps_used, 'num_indivs':num_indivs}
+    """
+    Saves the PCs and admixture information to a HDF5 file
+    :param output_file: HDF5 file the pcs should be written to
+    :param pcs_dict: principal components
+    """
+    print 'Saving genotype PCs in %s ' % output_file
+    # Store coordinates
+    oh5f = h5py.File(output_file, 'w')
+    oh5f.create_dataset('pcs', data=pcs_dict['pcs'])
+    oh5f.create_dataset('num_snps_used', data=pcs_dict['num_snps_used'])
+    oh5f.create_dataset('num_indivs', data=pcs_dict['num_indivs'])
+    oh5f.close()
 
+
+def load_pcs_info(input_file):
+    """
+    Loads pcs from an HDF5 file
+    :param input_file: HDF5 file that contains the pcs
+    :return: Dictionary with pcs and individual filters
+    """
+    print 'Loading HapMap PCs from %s ' % input_file
+    ch5f = h5py.File(input_file)
+    pcs = ch5f['pcs'][...]
+    num_snps_used = ch5f['num_snps_used'][...]
+    num_indivs = ch5f['num_indivs'][...]
+    ch5f.close()
+    return {'pcs': pcs, 'num_snps_used': num_snps_used, 'num_indivs':num_indivs}
 
 
 def calc_plink_genot_pcs(plink_genot_file, pc_weights_dict, pc_stats):
@@ -607,7 +634,7 @@ def _test_prediction_(indiv_genot_file=None, indiv_imputed_genot_file = None):
     
     
 def _test_pca_projection_(plink_genot_file=None, Kgenomes_gt_file=None, no_missing_plink_prefix=None, pc_weights_file=None, ref_pcs_admix_file=None, 
-                          pcs_plot_file=None):
+                          pcs_plot_file=None, ip_pcs_admix_file=None):
     #Datasets: a) 1K genomes; b) iPSYCH dataset; c) PC weights.
     
     #1. Figure out which SNPs to use
@@ -642,9 +669,16 @@ def _test_pca_projection_(plink_genot_file=None, Kgenomes_gt_file=None, no_missi
     #3. For each indiv in iPSYCH, project onto PCs and determine ancestry, even estimate admixture proportions?
     ipsych_pc_dict = calc_plink_genot_pcs(plink_genot_file, pc_weights_dict, pc_stats)
     
+    print 'Save iPsych ancestry PC projections to file'
+    save_pcs_info(ipsych_pc_dict, ip_pcs_admix_file)
+    
+#     print 'Load iPsych ancestry PC projections from file'
+#     ipsych_pc_dict = load_pcs_info(ip_pcs_admix_file)
+
+    
     #Plot PCs..
     print "Plot PC projection for the genotypes."
-    plot_pcs(pcs_plot_file+'_ipsych.png', ipsych_pc_dict['pcs'], pcs_dict['pop_dict']['populations'])
+    plot_pcs(pcs_plot_file+'_ipsych.png', ipsych_pc_dict['pcs'])
 
     plot_ipsych_1kg_pcs(pcs_plot_file+'_ipsych_w_1kgenomes.png', pcs_dict['pcs'], ipsych_pc_dict['pcs'], pcs_dict['pop_dict']['populations'])
     
