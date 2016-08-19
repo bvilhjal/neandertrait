@@ -464,13 +464,12 @@ def check_in_population(ip_pcs, ref_pcs, ref_populations, check_pop='EUR'):
     pop_filter = sp.in1d(ref_populations, [check_pop])
     pop_pcs = ref_pcs[pop_filter]
 
-    pop_mean = sp.mean(pop_pcs, 1)
-    pop_std = sp.std(pop_pcs, 1)
-    pop_lim = (2 * pop_std[:2]) ** 2
-    
-    ind_lim = (ip_pcs - pop_mean[:2])**2
-    is_in_population = sp.any(ind_lim < pop_lim,1)
-    return {'pop_lim': sp.sqrt(pop_lim), 'ref_pop_mean_pcs': pop_mean, 'ref_pop_std': pop_std, 'ind_limits': ind_lim,
+    pop_mean = sp.mean(pop_pcs, 0)
+    pop_std = sp.std(pop_pcs, 0)
+    ip_std_pcs = (ip_pcs-pop_mean)/pop_std
+    ip_ref_pop_dist = sp.sqrt(sp.sum((ip_std_pcs**2),1))
+    is_in_population = sp.any(ip_ref_pop_dist < 2)
+    return {'ref_pop_mean_pcs': pop_mean, 'ref_pop_std': pop_std,
             'is_in_population': is_in_population,}
 
 
@@ -693,7 +692,7 @@ def ipsych_pca_projection(plink_genot_file=None, Kgenomes_gt_file=None, no_missi
 
     #4. Identify "Europeans" and store in covariate file...
     res_dict = check_in_population(ipsych_pc_dict['pcs'], pcs_dict['pcs'], pcs_dict['pop_dict']['populations'], check_pop='EUR')
-    for k in ['pop_lim','ref_pop_mean_pcs','ref_pop_std']: 
+    for k in ['ref_pop_mean_pcs','ref_pop_std']: 
         print k, res_dict[k]
 
     plot_ipsych_1kg_pcs(pcs_plot_file+'_ipsych_w_1kgenomes.png', pcs_dict['pcs'], ipsych_pc_dict['pcs'],
