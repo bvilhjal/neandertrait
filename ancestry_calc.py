@@ -523,13 +523,13 @@ def plot_ipsych_1kg_pcs(plot_file, kg_pcs, ip_pcs, populations=None, indiv_pcs=N
             pop_filter = sp.in1d(populations, [pop])
             pop_pcs = kg_pcs[pop_filter]
             print pop_pcs.shape
-            pylab.plot(pop_pcs[:,0], pop_pcs[:,1], label=pop, ls='', marker='.', alpha=0.4)
+            pylab.plot(pop_pcs[:,0], pop_pcs[:,1], label=pop, ls='', marker='.', alpha=0.3)
     
     if indiv_filter is not None:
         filtered_pcs = ip_pcs[indiv_filter] 
         remain_pcs = ip_pcs[sp.negative(indiv_filter)] 
-        pylab.plot(remain_pcs[:,0], remain_pcs[:,1], ls='', marker='.', color='k', alpha=0.04, label='iPSYCH-NON-EUR')
-        pylab.plot(filtered_pcs[:,0], filtered_pcs[:,1], ls='', marker='.', color='m', alpha=0.04, label='iPSYCH-EUR')
+        pylab.plot(remain_pcs[:,0], remain_pcs[:,1], ls='', marker='.', color='k', alpha=0.02, label='iPSYCH-NON-EUR')
+        pylab.plot(filtered_pcs[:,0], filtered_pcs[:,1], ls='', marker='.', color='m', alpha=0.02, label='iPSYCH-EUR')
     else:
         pylab.plot(ip_pcs[:,0], ip_pcs[:,1], ls='', marker='.', color='k', alpha=0.02)
         
