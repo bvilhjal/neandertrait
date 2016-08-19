@@ -475,6 +475,39 @@ def plot_pcs(plot_file, pcs, populations=None, indiv_pcs=None):
     pylab.savefig(plot_file)
 
 
+def plot_ipsych_1kg_pcs(plot_file, kg_pcs, ip_pcs, populations=None, indiv_pcs=None):
+    """
+    Plots the PCs of the hapmap and if provided of the genotype
+    :param populations: dictionary with different population masks for coloring the individuals
+    :param plot_file: Name of the file the plot should be saved (either .png or .pdf)
+    :param pcs: principal components from the hapmap dataset
+    :param genotype_pcs_dict: Dictionary with PCs of the individual (optional)
+    """
+    print 'Plotting PCs of Hapmap'
+    # Plot them
+    pylab.clf()
+    if populations is not None:
+        unique_pops = sp.unique(populations)
+        for pop in unique_pops:
+            pop_filter = sp.in1d(populations, [pop])
+            pop_pcs = kg_pcs[pop_filter]
+            print pop_pcs.shape
+            pylab.plot(pop_pcs[:,0], pop_pcs[:,1], label=pop, ls='', marker='.', alpha=0.5)
+    
+    pylab.plot(ip_pcs[:,0], ip_pcs[:,1], ls='', marker='.', color='k', alpha=0.05)
+        
+
+    print 'Plotting genome on plot'
+    # Project genome on to plot.
+    if indiv_pcs is not None:
+        pylab.plot(indiv_pcs[0], indiv_pcs[1], 'o', label='This is you')
+    pylab.xlabel('PC 1')
+    pylab.ylabel('PC 2')
+    pylab.legend(loc=4, numpoints=1)
+    pylab.savefig(plot_file)
+    
+    
+
 def _calc_pcs(weight_dict, sids, nts, snps, num_pcs_to_use):
     num_nt_issues = 0
     num_snps_used = 0
@@ -613,6 +646,7 @@ def _test_pca_projection_(plink_genot_file=None, Kgenomes_gt_file=None, no_missi
     print "Plot PC projection for the genotypes."
     plot_pcs(pcs_plot_file+'_ipsych.png', ipsych_pc_dict['pcs'], pcs_dict['pop_dict']['populations'])
 
+    plot_ipsych_1kg_pcs(pcs_plot_file+'_ipsych_w_1kgenomes.png', pcs_dict['pcs'], ipsych_pc_dict['pcs'], pcs_dict['pop_dict']['populations'])
     
     #4. Identify "Europeans"
     
