@@ -526,7 +526,6 @@ def plot_ipsych_1kg_pcs(plot_file, kg_pcs, ip_pcs, populations=None, indiv_pcs=N
             pylab.plot(pop_pcs[:,0], pop_pcs[:,1], label=pop, ls='', marker='.', alpha=0.4)
     
     if indiv_filter is not None:
-
         filtered_pcs = ip_pcs[indiv_filter] 
         remain_pcs = ip_pcs[sp.negative(indiv_filter)] 
         pylab.plot(remain_pcs[:,0], remain_pcs[:,1], ls='', marker='.', color='k', alpha=0.04, label='iPSYCH-NON-EUR')
@@ -705,6 +704,6 @@ def ipsych_pca_projection(plink_genot_file=None, Kgenomes_gt_file=None, no_missi
     with open(indiv_out_file,'w') as f:
         f.write('IID    IS_EUR    PROJ_PC1    PROJ_PC2\n')
         for iid, is_eur, pcs in izip(ipsych_pc_dict['iids'],eur_filter, ipsych_pc_dict['pcs']):
-            f.write('%s    %d    %e    %e\n'%iid,is_eur,pcs[0],pcs[1])
+            f.write('%s    %d    %e    %e\n'%(iid,is_eur,pcs[0],pcs[1]))
     print 'Done!'
     
