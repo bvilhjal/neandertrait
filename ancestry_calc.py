@@ -256,7 +256,6 @@ def calc_genot_pcs(genot_file, pc_weights_dict, pc_stats, populations_to_use = [
     for chrom in range(1, 23):
         if verbose:
             print 'Working on Chromosome %d' % chrom
-        print 'Working on Chromosome %d' % chrom
         chrom_str = 'chr%d' % chrom
 
         print 'Identifying overlap'
@@ -267,7 +266,6 @@ def calc_genot_pcs(genot_file, pc_weights_dict, pc_stats, populations_to_use = [
         #         assert sids[ok_snp_filter]==ok_sids, 'WTF?'
         sids = sids.compress(ok_snp_filter, axis=0)
 
-        print 'Loading SNPs'
         if verbose:
             print 'Loading SNPs'
         snps = h5f[chrom_str]['calldata']['snps'][...]
@@ -289,7 +287,6 @@ def calc_genot_pcs(genot_file, pc_weights_dict, pc_stats, populations_to_use = [
         if verbose:
             print 'Using %d individuals'%sp.sum(indiv_filter)
         
-        print 'Updating PCs'
         if verbose:
             print 'Calculating PC projections'
         pcs_per_chr = _calc_pcs(pc_weights_dict, sids, nts, snps, num_pcs_to_use)
@@ -446,7 +443,7 @@ def check_in_population(pcs, pc1, pc2):
             'is_in_population': is_in_population,'pc1':pc1,'pc2':pc2}
 
 
-def plot_pcs(plot_file, pcs, populations, indiv_pcs=None):
+def plot_pcs(plot_file, pcs, populations=None, indiv_pcs=None):
     """
     Plots the PCs of the hapmap and if provided of the genotype
     :param populations: dictionary with different population masks for coloring the individuals
@@ -457,12 +454,16 @@ def plot_pcs(plot_file, pcs, populations, indiv_pcs=None):
     print 'Plotting PCs of Hapmap'
     # Plot them
     pylab.clf()
-    unique_pops = sp.unique(populations)
-    for pop in unique_pops:
-        pop_filter = sp.in1d(populations, [pop])
-        pop_pcs = pcs[pop_filter]
-        print pop_pcs.shape
-        pylab.plot(pop_pcs[:,0], pop_pcs[:,1], label=pop, ls='', marker='.', alpha=0.6)
+    if populations is not None:
+        unique_pops = sp.unique(populations)
+        for pop in unique_pops:
+            pop_filter = sp.in1d(populations, [pop])
+            pop_pcs = pcs[pop_filter]
+            print pop_pcs.shape
+            pylab.plot(pop_pcs[:,0], pop_pcs[:,1], label=pop, ls='', marker='.', alpha=0.5)
+    else:
+        pylab.plot(pcs[:,0], pcs[:,1], ls='', marker='.', alpha=0.5)
+        
 
     print 'Plotting genome on plot'
     # Project genome on to plot.
@@ -572,7 +573,8 @@ def _test_prediction_(indiv_genot_file=None, indiv_imputed_genot_file = None):
     
     
     
-def _test_pca_projection_(plink_genot_file=None, Kgenomes_gt_file=None, no_missing_plink_prefix=None, pc_weights_file=None, ref_pcs_admix_file=None):
+def _test_pca_projection_(plink_genot_file=None, Kgenomes_gt_file=None, no_missing_plink_prefix=None, pc_weights_file=None, ref_pcs_admix_file=None, 
+                          pcs_plot_file=None):
     #Datasets: a) 1K genomes; b) iPSYCH dataset; c) PC weights.
     
     #1. Figure out which SNPs to use
@@ -587,22 +589,30 @@ def _test_pca_projection_(plink_genot_file=None, Kgenomes_gt_file=None, no_missi
     
     #   - Determine a overlap of SNPs between datasets.
     #2. Project 1K genome, determine EUR cluster.
-    print 'Projecting PC for the 1K genomes'
-    kgt_pc_dict = calc_genot_pcs(Kgenomes_gt_file, pc_weights_dict, pc_stats, populations_to_use = ['EUR','AFR','EAS'], 
-                                snps_filter=snps_filter, verbose=True)
+#     print 'Projecting PC for the 1K genomes'
+#     kgt_pc_dict = calc_genot_pcs(Kgenomes_gt_file, pc_weights_dict, pc_stats, populations_to_use = ['EUR','AFR','EAS'], 
+#                                 snps_filter=snps_filter, verbose=True)
+#     
+#     print 'Save projected PCs and admixture decomposition to file'
+#     save_pcs_admixture_info(kgt_pc_dict['pcs'], kgt_pc_dict['pop_dict'], ref_pcs_admix_file)
+
+
+    print 'Loading pre-calculated projected PCs and admixture decomposition to file'
+    pcs_dict = load_pcs_admixture_info(ref_pcs_admix_file)
     
-    print 'Save projected PCs and admixture decomposition to file'
-    save_pcs_admixture_info(kgt_pc_dict['pcs'], kgt_pc_dict['pop_dict'], ref_pcs_admix_file)
-
-
-#     print 'Loading pre-calculated projected PCs and admixture decomposition to file'
-#     pcs_dict = load_pcs_admixture_info(ref_pcs_admix_file)
+    #Plot PCs..
+    print "Plot PC projection for the genotypes."
+    plot_pcs(pcs_plot_file+'_1kgenomes.png', pcs_dict['pcs'], pcs_dict['pop_dict']['populations'])
+    
     
     print 'Projecting PC for the iPSYCH genomes'    
     #3. For each indiv in iPSYCH, project onto PCs and determine ancestry, even estimate admixture proportions?
     ipsych_pc_dict = calc_plink_genot_pcs(plink_genot_file, pc_weights_dict, pc_stats)
     
-    #plot PCs
+    #Plot PCs..
+    print "Plot PC projection for the genotypes."
+    plot_pcs(pcs_plot_file+'_ipsych.png', ipsych_pc_dict['pcs'], pcs_dict['pop_dict']['populations'])
+
     
     #4. Identify "Europeans"
     
