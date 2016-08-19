@@ -287,6 +287,107 @@ def calc_genot_pcs(genot_file, pc_weights_dict, pc_stats, populations_to_use = [
     return {'pcs': pcs, 'num_snps_used': num_snps_used, 'pop_dict':pop_dict}
 
 
+
+
+
+
+
+def calc_plink_genot_pcs(plink_genot_file, pc_weights_dict, pc_stats):
+    """
+    Calculates:
+        - The principal components for the given genotype dataset.
+
+    :param plink_genot_file: Genotype file in plink format
+    :param pc_weights_dict: dictionary with SNP weights (key = snpid)
+    :param pc_stats: statistics about the PC SNP weights. 
+    :return: dictionary with pcs and number of snps that were used
+    
+    """
+    from plinkio import plinkfile
+    from itertools import izip
+    
+    plinkf = plinkfile.PlinkFile(plink_genot_file)
+    samples = plinkf.get_samples()
+    
+    print 'Calculating Principal components for genotype file %s' % plink_genot_file
+    ok_sids = np.asarray(list(pc_weights_dict.keys()))
+    print 'Loaded PC weight for %d SNPs' % (len(ok_sids))
+    # Load genotypes
+    print 'Loading genotypes'
+    
+    iids = [sample.iid for sample in samples]
+    num_indivs = len(iids)
+    
+    print 'Found %d individuals'%num_indivs        
+    
+    pc_weights_dict
+    d = pc_weights_dict.popitem()
+    num_pcs_to_use = len(d['pc_ws'])
+    pcs = sp.zeros((num_indivs, num_pcs_to_use))
+    num_nt_issues = 0
+    num_snps_used = 0
+    print 'Iterating over BED file to calculate PC projections.'
+    locus_list = plinkf.get_loci()
+    snp_i = 0  
+    
+    #Iterating over all SNPs
+    for locus, row in izip( locus_list, plinkf):
+        try:
+            #Check rs-ID
+#             sid = '%d_%d'%(locus.chromosome,locus.bp_position)
+            sid = locus.name
+            pc_info = pc_weights_dict[sid] #   {'pc_ws': pc_ws[i], 'mean_g': mean_g[i], 'nts': nts[i].tolist()}
+
+        except Exception: #Move on if rsID not found.
+            continue
+                
+        g_nt =  [locus.allele1,locus.allele2]
+        
+        #Parse SNP
+        snp = sp.array(row, dtype='int8')
+        
+        # ... and fill in the blanks if necessary.
+#         bin_counts = row.allele_counts()
+#         if bin_counts[-1]>0:
+#             mode_v = sp.argmax(bin_counts[:2])
+#             snp[snp==3] = mode_v
+
+        pc_weights = sp.array(pc_info['pc_ws'])
+        pc_weights = pc_weights[:num_pcs_to_use]
+        pc_weights.shape = (1, num_pcs_to_use)
+        af = pc_info['mean_g'] / 2.0
+        if sp.all([g_nt[1], g_nt[0]] == pc_info['nts']):
+            # print 'Flip sign'
+            pc_weights = -pc_weights
+            af = 1 - af
+        elif not sp.all(g_nt == pc_info['nts']):
+            num_nt_issues += 1
+            continue
+        mean_g = 2 * af
+        sd_g = sp.sqrt(af * (1 - af))
+        # "Normalizing" the SNPs with the given allele frequencies
+        norm_snp = (snp - mean_g) / sd_g
+        norm_snp.shape = (num_indivs, 1)
+
+        # Project on the PCs
+        pcs += sp.dot(norm_snp, pc_weights)
+        num_snps_used += 1
+
+        if snp_i>0 and snp_i%10000==0:
+            print 'Working on SNP number %d'%snp_i 
+            print 'Number of NT issues: %d'%num_nt_issues
+        
+        snp_i +=1
+
+    plinkf.close()
+        
+    print '%d SNPs were excluded from the analysis due to nucleotide issues.' % (num_nt_issues)
+    print '%d SNPs were used for the analysis.' % (num_snps_used)
+    
+    return {'pcs': pcs, 'num_snps_used': num_snps_used, 'num_indivs':num_indivs}
+
+
+
 def check_in_population(pcs, pc1, pc2):
     """
     Check if PC1 and PC2 are within the populations' PCs
@@ -432,7 +533,7 @@ def _test_prediction_(indiv_genot_file=None, indiv_imputed_genot_file = None):
     
     
     
-def _test_pca_projection_(Kgenomes_gt_file=None, no_missing_plink_prefix=None, pc_weights_file=None):
+def _test_pca_projection_(plink_genot_file=None, Kgenomes_gt_file=None, no_missing_plink_prefix=None, pc_weights_file=None):
     #Datasets: a) 1K genomes; b) iPSYCH dataset; c) PC weights.
     
     #1. Figure out which SNPs to use
@@ -450,5 +551,6 @@ def _test_pca_projection_(Kgenomes_gt_file=None, no_missing_plink_prefix=None, p
     
     
     #3. For each indiv in iPSYCH, project onto PCs and determine ancestry, even estimate admixture proportions?
-    pass
+    calc_plink_genot_pcs(plink_genot_file, pc_weights_dict, pc_stats)
+    
     
