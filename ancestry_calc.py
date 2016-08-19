@@ -436,10 +436,8 @@ def calc_plink_genot_pcs(plink_genot_file, pc_weights_dict, pc_stats):
         pcs += sp.dot(norm_snp, pc_weights)
         num_snps_used += 1
 
-        if snp_i>0 and snp_i%100==0:
-            print 'Working on SNP number %d'%snp_i 
-            print 'Number of NT issues: %d'%num_nt_issues
-        
+        if snp_i>0 and snp_i%1000==0:
+            print 'Working on SNP number %d'%snp_i         
         snp_i +=1
 
     plinkf.close()
