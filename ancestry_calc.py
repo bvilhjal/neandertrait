@@ -464,12 +464,12 @@ def check_in_population(ip_pcs, ref_pcs, ref_populations, check_pop='EUR'):
     pop_filter = sp.in1d(ref_populations, [check_pop])
     pop_pcs = ref_pcs[pop_filter]
 
-    pop_mean = sp.mean(pop_pcs, 0)
-    pop_std = sp.std(pop_pcs, 0)
+    pop_mean = sp.mean(pop_pcs, 1)
+    pop_std = sp.std(pop_pcs, 1)
     pop_lim = (2 * pop_std[:2]) ** 2
     
     ind_lim = (ip_pcs - pop_mean[:2])**2
-    is_in_population = sp.any(ind_lim < pop_lim,0)
+    is_in_population = sp.any(ind_lim < pop_lim,1)
     return {'pop_lim': sp.sqrt(pop_lim), 'ref_pop_mean_pcs': pop_mean, 'ref_pop_std': pop_std, 'ind_limits': ind_lim,
             'is_in_population': is_in_population,}
 
