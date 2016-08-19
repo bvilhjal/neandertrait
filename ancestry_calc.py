@@ -697,7 +697,7 @@ def ipsych_pca_projection(plink_genot_file=None, Kgenomes_gt_file=None, no_missi
         print k, res_dict[k]
 
     plot_ipsych_1kg_pcs(pcs_plot_file+'_ipsych_w_1kgenomes.png', pcs_dict['pcs'], ipsych_pc_dict['pcs'],
-                         pcs_dict['pop_dict']['populations'], indiv_filter=eur_filter)
+                         pcs_dict['pop_dict']['populations'], indiv_filter=res_dict['is_in_population'])
     
     eur_filter = sp.array(res_dict['is_in_population'],dtype='int8')    
     with open(indiv_out_file,'w') as f:
