@@ -529,8 +529,8 @@ def plot_ipsych_1kg_pcs(plot_file, kg_pcs, ip_pcs, populations=None, indiv_pcs=N
 
         filtered_pcs = ip_pcs[indiv_filter] 
         remain_pcs = ip_pcs[sp.negative(indiv_filter)] 
-        pylab.plot(filtered_pcs[:,0], filtered_pcs[:,1], ls='', marker='.', color='m', alpha=0.02, label='iPSYCH-EUR')
-        pylab.plot(remain_pcs[:,0], remain_pcs[:,1], ls='', marker='.', color='k', alpha=0.02, label='iPSYCH-NON-EUR')
+        pylab.plot(remain_pcs[:,0], remain_pcs[:,1], ls='', marker='.', color='k', alpha=0.04, label='iPSYCH-NON-EUR')
+        pylab.plot(filtered_pcs[:,0], filtered_pcs[:,1], ls='', marker='.', color='m', alpha=0.04, label='iPSYCH-EUR')
     else:
         pylab.plot(ip_pcs[:,0], ip_pcs[:,1], ls='', marker='.', color='k', alpha=0.02)
         
