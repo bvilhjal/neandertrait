@@ -358,7 +358,7 @@ def calc_plink_genot_pcs(plink_genot_file, pc_weights_dict, pc_stats):
     
     pc_weights_dict
     d = pc_weights_dict.popitem()
-    num_pcs_to_use = len(d['pc_ws'])
+    num_pcs_to_use = len(d[1]['pc_ws'])
     pcs = sp.zeros((num_indivs, num_pcs_to_use))
     num_nt_issues = 0
     num_snps_used = 0
