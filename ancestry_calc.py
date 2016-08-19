@@ -137,6 +137,45 @@ def save_pc_weights(weights, stats, output_file):
     gh5f.close()
 
 
+
+def save_pcs_admixture_info(pcs, pop_dict, output_file):
+    """
+    Saves the PCs and admixture information to a HDF5 file
+    :param output_file: HDF5 file the pcs should be written to
+    :param pcs: principal components
+    :param pop_dict: dictionary with various populations information
+    """
+    print 'Saving genotype PCs in %s ' % output_file
+    # Store coordinates
+    oh5f = h5py.File(output_file, 'w')
+    oh5f.create_dataset('pcs', data=pcs)
+    pop_g = oh5f.create_group('pop_group')
+    for label, mask in pop_dict.items():
+        pop_g.create_dataset(label, data=mask)
+#     pop_g.create_dataset('admix_decom_mat', data=pop_dict['admix_decom_mat'])
+#     pop_g.create_dataset('populations', data=pop_dict['populations'])
+#     pop_g.create_dataset('unique_populations', data=pop_dict['unique_populations'])
+#     pop_g.create_dataset('avg_pcs', data=pop_dict['avg_pcs'])
+#     pop_g.create_dataset('num_indivs', data=pop_dict['num_indivs'])
+    oh5f.close()
+
+
+def load_pcs_admixture_info(input_file):
+    """
+    Loads pcs from an HDF5 file
+    :param input_file: HDF5 file that contains the pcs
+    :return: Dictionary with pcs and individual filters
+    """
+    print 'Loading HapMap PCs from %s ' % input_file
+    ch5f = h5py.File(input_file)
+    pop_g = ch5f['pop_group']
+    pop_dict = {}
+    for key in pop_g.keys():
+        pop_dict[key] = pop_g[key][...]
+    pcs = ch5f['pcs'][...]
+    ch5f.close()
+    return {'pop_dict': pop_dict, 'pcs': pcs}
+
 def calc_indiv_genot_pcs(genotype_file, weight_dict, num_pcs_to_uses,**kwargs):
     """
     Calculate the principal components for a given an individual genotype using the specified weights (
@@ -533,24 +572,39 @@ def _test_prediction_(indiv_genot_file=None, indiv_imputed_genot_file = None):
     
     
     
-def _test_pca_projection_(plink_genot_file=None, Kgenomes_gt_file=None, no_missing_plink_prefix=None, pc_weights_file=None):
+def _test_pca_projection_(plink_genot_file=None, Kgenomes_gt_file=None, no_missing_plink_prefix=None, pc_weights_file=None, ref_pcs_admix_file=None):
     #Datasets: a) 1K genomes; b) iPSYCH dataset; c) PC weights.
     
     #1. Figure out which SNPs to use
     #   - Restrict iPSYCH SNPs to ones with no missing values.  (i.e. ~200000K SNPs)
     #   - Parse iPsych files into SNP filter dicts. 
+    print 'Getting the SNP filter'
     snps_filter = get_snp_list(no_missing_plink_prefix)
     
+    print 'Parsing the PC weights'
     #   - Parse PC weights 
     pc_weights_dict, pc_stats = parse_pc_weights(pc_weights_file)
     
     #   - Determine a overlap of SNPs between datasets.
     #2. Project 1K genome, determine EUR cluster.
+    print 'Projecting PC for the 1K genomes'
     kgt_pc_dict = calc_genot_pcs(Kgenomes_gt_file, pc_weights_dict, pc_stats, populations_to_use = ['EUR','AFR','EAS'], 
                                 snps_filter=snps_filter, verbose=True)
     
+    print 'Save projected PCs and admixture decomposition to file'
+    save_pcs_admixture_info(kgt_pc_dict['pcs'], kgt_pc_dict['pop_dict'], ref_pcs_admix_file)
+
+
+#     print 'Loading pre-calculated projected PCs and admixture decomposition to file'
+#     pcs_dict = load_pcs_admixture_info(ref_pcs_admix_file)
     
+    print 'Projecting PC for the iPSYCH genomes'    
     #3. For each indiv in iPSYCH, project onto PCs and determine ancestry, even estimate admixture proportions?
-    calc_plink_genot_pcs(plink_genot_file, pc_weights_dict, pc_stats)
+    ipsych_pc_dict = calc_plink_genot_pcs(plink_genot_file, pc_weights_dict, pc_stats)
     
+    #plot PCs
+    
+    #4. Identify "Europeans"
+    
+    print 'Done!'
     
