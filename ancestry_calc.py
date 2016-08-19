@@ -240,8 +240,8 @@ def calc_genot_pcs(genot_file, pc_weights_dict, pc_stats, populations_to_use = [
     print 'Loading genotypes'
     h5f = h5py.File(genot_file, 'r')
 
-    populations = h5f['indivs']['ancestry'][...]
-#     populations = h5f['indivs']['continent'][...]  #Currently this is using continents, but we can/should switch to populations.  
+#     populations = h5f['indivs']['ancestry'][...]
+    populations = h5f['indivs']['continent'][...]  #Currently this is using continents, but we can/should switch to populations.  
     #We should also consider to allow us to combine multiple populations in one group, or something like that. 
     
     indiv_filter = sp.in1d(populations, populations_to_use)
