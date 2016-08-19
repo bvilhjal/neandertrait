@@ -695,12 +695,11 @@ def ipsych_pca_projection(plink_genot_file=None, Kgenomes_gt_file=None, no_missi
     res_dict = check_in_population(ipsych_pc_dict['pcs'], pcs_dict['pcs'], pcs_dict['pop_dict']['populations'], check_pop='EUR')
     for k in ['pop_lim','ref_pop_mean_pcs','ref_pop_std']: 
         print k, res_dict[k]
-    eur_filter = sp.array(res_dict['is_in_population'],dtype='int8')
 
     plot_ipsych_1kg_pcs(pcs_plot_file+'_ipsych_w_1kgenomes.png', pcs_dict['pcs'], ipsych_pc_dict['pcs'],
                          pcs_dict['pop_dict']['populations'], indiv_filter=eur_filter)
     
-    
+    eur_filter = sp.array(res_dict['is_in_population'],dtype='int8')    
     with open(indiv_out_file,'w') as f:
         f.write('IID    IS_EUR    PROJ_PC1    PROJ_PC2\n')
         for iid, is_eur, pcs in izip(ipsych_pc_dict['iids'],eur_filter, ipsych_pc_dict['pcs']):
