@@ -337,6 +337,7 @@ def save_pcs_info(pcs_dict, output_file): #    return {'pcs': pcs, 'num_snps_use
     oh5f.create_dataset('pcs', data=pcs_dict['pcs'])
     oh5f.create_dataset('num_snps_used', data=pcs_dict['num_snps_used'])
     oh5f.create_dataset('num_indivs', data=pcs_dict['num_indivs'])
+    oh5f.create_dataset('iids', data=pcs_dict['iids'])
     oh5f.close()
 
 
@@ -351,8 +352,9 @@ def load_pcs_info(input_file):
     pcs = ch5f['pcs'][...]
     num_snps_used = ch5f['num_snps_used'][...]
     num_indivs = ch5f['num_indivs'][...]
+    iids = ch5f['iids'][...]
     ch5f.close()
-    return {'pcs': pcs, 'num_snps_used': num_snps_used, 'num_indivs':num_indivs}
+    return {'pcs': pcs, 'num_snps_used': num_snps_used, 'num_indivs':num_indivs, 'iids':iids}
 
 
 def calc_plink_genot_pcs(plink_genot_file, pc_weights_dict, pc_stats):
@@ -445,27 +447,31 @@ def calc_plink_genot_pcs(plink_genot_file, pc_weights_dict, pc_stats):
     print '%d SNPs were excluded from the analysis due to nucleotide issues.' % (num_nt_issues)
     print '%d SNPs were used for the analysis.' % (num_snps_used)
     
-    return {'pcs': pcs, 'num_snps_used': num_snps_used, 'num_indivs':num_indivs}
+    return {'pcs': pcs, 'num_snps_used': num_snps_used, 'num_indivs':num_indivs, 'iids':iids}
 
 
 
-def check_in_population(pcs, pc1, pc2):
+def check_in_population(ip_pcs, ref_pcs, ref_populations, check_pop='EUR'):
     """
     Check if PC1 and PC2 are within the populations' PCs
-    :param pcs: pcs of the population
-    :param pc1: PC1 of the individual
-    :param pc2: PC2 of the individual
+    :param ip_pcs: pcs of the iPSYCH indivs
+    :param ref_pcs: pcs of the reference data (e.g. 1K genomes)
+    :param ref_populations: population assignments for the reference population.
+    :param check_pop: The population to check.
     :return: Dictionary with various statistics
     """
     # Report ancestry.
-    pop_mean = sp.mean(pcs, 0)
-    pop_std = sp.std(pcs, 0)
-    pop_lim = (3 * pop_std[:2]) ** 2
-    ind_pcs = sp.array([pc1, pc2])
-    ind_lim = (ind_pcs - pop_mean[:2]) ** 2
-    is_in_population = sp.any(ind_lim ** 2 < pop_lim)
-    return {'pop_lim': pop_lim, 'pop_mean': pop_mean, 'pop_std': pop_std, 'ind_lim': ind_lim,
-            'is_in_population': is_in_population,'pc1':pc1,'pc2':pc2}
+    pop_filter = sp.in1d(ref_populations, [check_pop])
+    pop_pcs = ref_pcs[pop_filter]
+
+    pop_mean = sp.mean(pop_pcs, 0)
+    pop_std = sp.std(pop_pcs, 0)
+    pop_lim = (2 * pop_std[:2]) ** 2
+    
+    ind_lim = (ip_pcs - pop_mean[:2])**2
+    is_in_population = sp.any(ind_lim < pop_lim,0)
+    return {'pop_lim': sp.sqrt(pop_lim), 'ref_pop_mean_pcs': pop_mean, 'ref_pop_std': pop_std, 'ind_limits': ind_lim,
+            'is_in_population': is_in_population,}
 
 
 def plot_pcs(plot_file, pcs, populations=None, indiv_pcs=None):
@@ -500,7 +506,7 @@ def plot_pcs(plot_file, pcs, populations=None, indiv_pcs=None):
     pylab.savefig(plot_file)
 
 
-def plot_ipsych_1kg_pcs(plot_file, kg_pcs, ip_pcs, populations=None, indiv_pcs=None):
+def plot_ipsych_1kg_pcs(plot_file, kg_pcs, ip_pcs, populations=None, indiv_pcs=None, indiv_filter=None):
     """
     Plots the PCs of the hapmap and if provided of the genotype
     :param populations: dictionary with different population masks for coloring the individuals
@@ -517,9 +523,16 @@ def plot_ipsych_1kg_pcs(plot_file, kg_pcs, ip_pcs, populations=None, indiv_pcs=N
             pop_filter = sp.in1d(populations, [pop])
             pop_pcs = kg_pcs[pop_filter]
             print pop_pcs.shape
-            pylab.plot(pop_pcs[:,0], pop_pcs[:,1], label=pop, ls='', marker='.', alpha=0.5)
+            pylab.plot(pop_pcs[:,0], pop_pcs[:,1], label=pop, ls='', marker='.', alpha=0.4)
     
-    pylab.plot(ip_pcs[:,0], ip_pcs[:,1], ls='', marker='.', color='k', alpha=0.05)
+    if indiv_filter is not None:
+
+        filtered_pcs = ip_pcs[indiv_filter] 
+        remain_pcs = ip_pcs[sp.negative(indiv_filter)] 
+        pylab.plot(filtered_pcs[:,0], filtered_pcs[:,1], ls='', marker='.', color='m', alpha=0.02, label='iPSYCH-EUR')
+        pylab.plot(remain_pcs[:,0], remain_pcs[:,1], ls='', marker='.', color='k', alpha=0.02, label='iPSYCH-NON-EUR')
+    else:
+        pylab.plot(ip_pcs[:,0], ip_pcs[:,1], ls='', marker='.', color='k', alpha=0.02)
         
 
     print 'Plotting genome on plot'
@@ -631,8 +644,9 @@ def _test_prediction_(indiv_genot_file=None, indiv_imputed_genot_file = None):
     
     
     
-def _test_pca_projection_(plink_genot_file=None, Kgenomes_gt_file=None, no_missing_plink_prefix=None, pc_weights_file=None, ref_pcs_admix_file=None, 
-                          pcs_plot_file=None, ip_pcs_admix_file=None):
+def ipsych_pca_projection(plink_genot_file=None, Kgenomes_gt_file=None, no_missing_plink_prefix=None, pc_weights_file=None, ref_pcs_admix_file=None, 
+                          pcs_plot_file=None, ip_pcs_admix_file=None, indiv_out_file=None):
+    from itertools import izip
     #Datasets: a) 1K genomes; b) iPSYCH dataset; c) PC weights.
     
     #1. Figure out which SNPs to use
@@ -678,9 +692,19 @@ def _test_pca_projection_(plink_genot_file=None, Kgenomes_gt_file=None, no_missi
     print "Plot PC projection for the genotypes."
     plot_pcs(pcs_plot_file+'_ipsych.png', ipsych_pc_dict['pcs'])
 
-    plot_ipsych_1kg_pcs(pcs_plot_file+'_ipsych_w_1kgenomes.png', pcs_dict['pcs'], ipsych_pc_dict['pcs'], pcs_dict['pop_dict']['populations'])
+    #4. Identify "Europeans" and store in covariate file...
+    res_dict = check_in_population(ipsych_pc_dict['pcs'], pcs_dict['pcs'], pcs_dict['pop_dict']['populations'], check_pop='EUR')
+    for k in ['pop_lim','ref_pop_mean_pcs','ref_pop_std']: 
+        print k, res_dict[k]
+    eur_filter = sp.array(res_dict['is_in_population'],dtype='int8')
+
+    plot_ipsych_1kg_pcs(pcs_plot_file+'_ipsych_w_1kgenomes.png', pcs_dict['pcs'], ipsych_pc_dict['pcs'],
+                         pcs_dict['pop_dict']['populations'], indiv_filter=eur_filter)
     
-    #4. Identify "Europeans"
     
+    with open(indiv_out_file) as f:
+        f.write('IID    IS_EUR    PROJ_PC1    PROJ_PC2\n')
+        for iid, is_eur, pcs in izip(ipsych_pc_dict['iids'],eur_filter, ipsych_pc_dict['pcs']):
+            f.write('%s    %d    %e    %e\n'%iid,is_eur,pcs[0],pcs[1])
     print 'Done!'
     
