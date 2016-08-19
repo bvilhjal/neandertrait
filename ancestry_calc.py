@@ -677,15 +677,15 @@ def ipsych_pca_projection(plink_genot_file=None, Kgenomes_gt_file=None, no_missi
     plot_pcs(pcs_plot_file+'_1kgenomes.png', pcs_dict['pcs'], pcs_dict['pop_dict']['populations'])
     
     
-    print 'Projecting PC for the iPSYCH genomes'    
-    #3. For each indiv in iPSYCH, project onto PCs and determine ancestry, even estimate admixture proportions?
-    ipsych_pc_dict = calc_plink_genot_pcs(plink_genot_file, pc_weights_dict, pc_stats)
+#     print 'Projecting PC for the iPSYCH genomes'    
+#     #3. For each indiv in iPSYCH, project onto PCs and determine ancestry, even estimate admixture proportions?
+#     ipsych_pc_dict = calc_plink_genot_pcs(plink_genot_file, pc_weights_dict, pc_stats)
+#     
+#     print 'Save iPsych ancestry PC projections to file'
+#     save_pcs_info(ipsych_pc_dict, ip_pcs_admix_file)
     
-    print 'Save iPsych ancestry PC projections to file'
-    save_pcs_info(ipsych_pc_dict, ip_pcs_admix_file)
-    
-#     print 'Load iPsych ancestry PC projections from file'
-#     ipsych_pc_dict = load_pcs_info(ip_pcs_admix_file)
+    print 'Load iPsych ancestry PC projections from file'
+    ipsych_pc_dict = load_pcs_info(ip_pcs_admix_file)
 
     
     #Plot PCs..
@@ -702,7 +702,7 @@ def ipsych_pca_projection(plink_genot_file=None, Kgenomes_gt_file=None, no_missi
                          pcs_dict['pop_dict']['populations'], indiv_filter=eur_filter)
     
     
-    with open(indiv_out_file) as f:
+    with open(indiv_out_file,'w') as f:
         f.write('IID    IS_EUR    PROJ_PC1    PROJ_PC2\n')
         for iid, is_eur, pcs in izip(ipsych_pc_dict['iids'],eur_filter, ipsych_pc_dict['pcs']):
             f.write('%s    %d    %e    %e\n'%iid,is_eur,pcs[0],pcs[1])
