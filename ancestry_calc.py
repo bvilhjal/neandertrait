@@ -659,12 +659,12 @@ def ipsych_pca_projection(plink_genot_file=None, Kgenomes_gt_file=None, no_missi
     
     #   - Determine a overlap of SNPs between datasets.
     #2. Project 1K genome, determine EUR cluster.
-#     print 'Projecting PC for the 1K genomes'
-#     kgt_pc_dict = calc_genot_pcs(Kgenomes_gt_file, pc_weights_dict, pc_stats, populations_to_use = ['EUR','AFR','EAS'], 
-#                                 snps_filter=snps_filter, verbose=True)
-#     
-#     print 'Save projected PCs and admixture decomposition to file'
-#     save_pcs_admixture_info(kgt_pc_dict['pcs'], kgt_pc_dict['pop_dict'], ref_pcs_admix_file)
+    print 'Projecting PC for the 1K genomes'
+    kgt_pc_dict = calc_genot_pcs(Kgenomes_gt_file, pc_weights_dict, pc_stats, populations_to_use = ['EUR','AFR','EAS'], 
+                                snps_filter=snps_filter, verbose=True)
+     
+    print 'Save projected PCs and admixture decomposition to file'
+    save_pcs_admixture_info(kgt_pc_dict['pcs'], kgt_pc_dict['pop_dict'], ref_pcs_admix_file)
 
 
     print 'Loading pre-calculated projected PCs and admixture decomposition to file'
@@ -674,13 +674,13 @@ def ipsych_pca_projection(plink_genot_file=None, Kgenomes_gt_file=None, no_missi
     print "Plot PC projection for the genotypes."
     plot_pcs(pcs_plot_file+'_1kgenomes.png', pcs_dict['pcs'], pcs_dict['pop_dict']['populations'])
     
-    
-#     print 'Projecting PC for the iPSYCH genomes'    
-#     #3. For each indiv in iPSYCH, project onto PCs and determine ancestry, even estimate admixture proportions?
-#     ipsych_pc_dict = calc_plink_genot_pcs(plink_genot_file, pc_weights_dict, pc_stats)
-#     
-#     print 'Save iPsych ancestry PC projections to file'
-#     save_pcs_info(ipsych_pc_dict, ip_pcs_admix_file)
+    print 'Projecting PC for the iPSYCH genomes'    
+
+    #3. For each indiv in iPSYCH, project onto PCs and determine ancestry, even estimate admixture proportions?
+    ipsych_pc_dict = calc_plink_genot_pcs(plink_genot_file, pc_weights_dict, pc_stats)
+     
+    print 'Save iPsych ancestry PC projections to file'
+    save_pcs_info(ipsych_pc_dict, ip_pcs_admix_file)
     
     print 'Load iPsych ancestry PC projections from file'
     ipsych_pc_dict = load_pcs_info(ip_pcs_admix_file)
